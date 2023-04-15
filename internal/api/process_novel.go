@@ -93,7 +93,7 @@ func getVolume(aidNum int, vidNum int) (int, volumeResponse, wenku.Volume) {
 	if err != nil {
 		return 500, volumeResponse{Message: err.Error()}, wenku.Volume{}
 	}
-	return 200, volumeResponse{Message: "Volume found.", Content: body.String()}, volume
+	return 200, volumeResponse{Message: "Volume found.", Content: util.Simplified2TW(body.String())}, volume
 }
 
 func getChapter(aid int, vid int, cid int) (int, chapterResponse) {
