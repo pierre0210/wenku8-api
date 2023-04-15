@@ -38,22 +38,21 @@ type novelIndex struct {
 	VolumeList []volumeIndex `json:"volumeList"`
 }
 
-func splitVolume(content string, txtContent string, volume wenku.Volume, aid int, vid int) {
-	txtChapter := strings.Split(txtContent, "\r\n\r\n  ")
+func splitVolume(content string, volume wenku.Volume, aid int, vid int) {
 	for index, chapter := range volume.ChapterList {
-		r, _ := regexp.Compile(`<div class="chaptertitle"><a name="` + strconv.Itoa(chapter.Cid) + `">[\s\S]+?<span></span></div>`)
+		r, _ := regexp.Compile(`<div class="chaptertitle"><a name="` + strconv.Itoa(chapter.Cid) + `">[\s\S]+?</a></div>` + `(\r\n|\r|\n)<div class="chaptercontent">[\s\S]+?<span></span></div>`)
 		rHtml, _ := regexp.Compile("<[^<>]+>")
-		rUrl, _ := regexp.Compile(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+		rUrl, _ := regexp.Compile(`http:\/\/pic.wenku8.com/pictures/[0-9]/[0-9]+/[0-9]+/[0-9]+.jpg`)
+
 		htmlChapter := r.FindString(content)
-		//log.Println(content)
 		htmlChapter = strings.ReplaceAll(htmlChapter, "<br />\r\n<br />", "\r\n")
 		htmlChapter = strings.ReplaceAll(htmlChapter, "&nbsp;", " ")
 		htmlChapter = strings.ReplaceAll(htmlChapter, "</a></div>", "")
 		htmlChapter = strings.ReplaceAll(htmlChapter, "</a>", "\r\n")
 		htmlChapter = rHtml.ReplaceAllString(htmlChapter, "")
-		//volume.ChapterList[index].Content, _ = util.SimplifyToTW(volume.ChapterList[index].Content)
+
 		volume.ChapterList[index].Urls = rUrl.FindAllString(htmlChapter, -1)
-		volume.ChapterList[index].Content = txtChapter[(index + 1)]
+		volume.ChapterList[index].Content = htmlChapter
 
 		/*
 			chapterExists, _ := chapterTable.CheckChapter(database.DB, aid, vid, cid)
@@ -66,40 +65,35 @@ func splitVolume(content string, txtContent string, volume wenku.Volume, aid int
 	}
 }
 
-func getVolume(aidNum int, vidNum int) (int, volumeResponse, volumeResponse, wenku.Volume) {
+func getVolume(aidNum int, vidNum int) (int, volumeResponse, wenku.Volume) {
 	var body bytes.Buffer
-	var txtBody bytes.Buffer
 
 	_, _, volumeList := wenku.GetVolumeList(aidNum)
 	if len(volumeList) == 0 || vidNum > len(volumeList) {
-		return 404, volumeResponse{Message: "Not found."}, volumeResponse{Message: "Not found."}, wenku.Volume{}
+		return 404, volumeResponse{Message: "Not found."}, wenku.Volume{}
 	}
 	volume := volumeList[(vidNum - 1)]
 	vidNum = volume.Vid
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("https://dl.wenku8.com/pack.php?aid=%d&vid=%d", aidNum, vidNum), nil)
-	txtReq, _ := http.NewRequest("GET", fmt.Sprintf("https://dl.wenku8.com/packtxt.php?aid=%d&vid=%d&charset=big5", aidNum, vidNum), nil)
 	client := http.Client{}
 	res, err := client.Do(req)
 	util.ErrorHandler(err, false)
-	txtRes, txtErr := client.Do(txtReq)
-	util.ErrorHandler(txtErr, false)
-	if err != nil && txtErr != nil {
-		return 500, volumeResponse{Message: err.Error()}, volumeResponse{Message: txtErr.Error()}, wenku.Volume{}
-	} else if res.StatusCode == 404 || txtRes.StatusCode == 404 {
-		return 404, volumeResponse{Message: "Volume not found."}, volumeResponse{Message: "Text volume not found."}, wenku.Volume{}
+
+	if err != nil {
+		return 500, volumeResponse{Message: err.Error()}, wenku.Volume{}
+	} else if res.StatusCode == 404 {
+		return 404, volumeResponse{Message: "Volume not found."}, wenku.Volume{}
 	} else if res.StatusCode != 200 {
-		return res.StatusCode, volumeResponse{Message: "Other problem."}, volumeResponse{Message: "Other problem."}, wenku.Volume{}
+		return res.StatusCode, volumeResponse{Message: "Other problem."}, wenku.Volume{}
 	}
 
 	_, err = io.Copy(&body, res.Body)
 	util.ErrorHandler(err, false)
-	_, txtErr = io.Copy(&txtBody, txtRes.Body)
-	util.ErrorHandler(txtErr, false)
-	if err != nil && txtErr != nil {
-		return 500, volumeResponse{Message: err.Error()}, volumeResponse{Message: txtErr.Error()}, wenku.Volume{}
+	if err != nil {
+		return 500, volumeResponse{Message: err.Error()}, wenku.Volume{}
 	}
-	return 200, volumeResponse{Message: "Volume found.", Content: body.String()}, volumeResponse{Message: "Volume found.", Content: txtBody.String()}, volume
+	return 200, volumeResponse{Message: "Volume found.", Content: body.String()}, volume
 }
 
 func getChapter(aid int, vid int, cid int) (int, chapterResponse) {
@@ -113,12 +107,12 @@ func getChapter(aid int, vid int, cid int) (int, chapterResponse) {
 			return 200, chapterResponse{Message: "Saved chapter found.", Content: chapterObj}
 		}
 	*/
-	statusCode, res, txtRes, volume := getVolume(aid, vid)
+	statusCode, res, volume := getVolume(aid, vid)
 	if statusCode != 200 {
 		log.Printf("%d %s\n", statusCode, res.Message)
-		return statusCode, chapterResponse{Message: res.Message + " " + txtRes.Message}
+		return statusCode, chapterResponse{Message: res.Message}
 	}
-	splitVolume(res.Content, txtRes.Content, volume, aid, vid)
+	splitVolume(res.Content, volume, aid, vid)
 	if cid > len(volume.ChapterList) {
 		log.Println("Index out of range.")
 		return 404, chapterResponse{Message: "Index out of range."}

@@ -60,7 +60,8 @@ func GetVolumeList(aid int) (string, string, []Volume) {
 		}
 	})
 
-	c.Visit(fmt.Sprintf("https://www.wenku8.net/modules/article/reader.php?aid=%d", aid))
+	err := c.Visit(fmt.Sprintf("https://www.wenku8.net/modules/article/reader.php?aid=%d", aid))
+	util.ErrorHandler(err, false)
 
 	return novelTitle, novelAuthor, volumeList
 }
