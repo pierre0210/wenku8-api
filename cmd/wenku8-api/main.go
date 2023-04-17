@@ -7,12 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/pierre0210/wenku8-api/internal/api"
+	"github.com/pierre0210/wenku8-api/internal/database"
 	"github.com/pierre0210/wenku8-api/internal/util"
 )
 
 func main() {
 	port := flag.Int("p", 5000, "Port")
 	flag.Parse()
+
+	database.InitRedis()
 
 	err := godotenv.Load()
 	util.ErrorHandler(err, true)
