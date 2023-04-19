@@ -15,12 +15,12 @@ type volumeResponse struct {
 
 type chapterResponse struct {
 	Message string        `json:"message"`
-	Content wenku.Chapter `json:"content"`
+	Chapter wenku.Chapter `json:"chapter"`
 }
 
 type indexResponse struct {
 	Message string     `json:"message"`
-	Content novelIndex `json:"content"`
+	Index   novelIndex `json:"index"`
 }
 
 func HandleGetVolume(c *gin.Context) {

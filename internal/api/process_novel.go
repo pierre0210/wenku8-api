@@ -94,7 +94,7 @@ func getChapter(aid int, vid int, cid int) (int, chapterResponse) {
 	if exist {
 		var chapter wenku.Chapter
 		json.Unmarshal([]byte(content), &chapter)
-		return 200, chapterResponse{Message: "Chapter cache found.", Content: chapter}
+		return 200, chapterResponse{Message: "Chapter cache found.", Chapter: chapter}
 	}
 	statusCode, res, volume := getVolume(aid, vid)
 	if statusCode != 200 {
@@ -107,7 +107,7 @@ func getChapter(aid int, vid int, cid int) (int, chapterResponse) {
 		return 404, chapterResponse{Message: "Index out of range."}
 	}
 
-	return 200, chapterResponse{Message: "Chapter found.", Content: volume.ChapterList[(cid - 1)]}
+	return 200, chapterResponse{Message: "Chapter found.", Chapter: volume.ChapterList[(cid - 1)]}
 }
 
 func getIndex(aid int) (int, indexResponse) {
@@ -125,5 +125,5 @@ func getIndex(aid int) (int, indexResponse) {
 			index.VolumeList[len(index.VolumeList)-1].ChapterList = append(index.VolumeList[len(index.VolumeList)-1].ChapterList, chapterIndex{Title: chapter.Title, Cid: chapter.Cid})
 		}
 	}
-	return 200, indexResponse{Message: "Index found.", Content: index}
+	return 200, indexResponse{Message: "Index found.", Index: index}
 }
