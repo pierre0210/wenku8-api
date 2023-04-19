@@ -3,6 +3,7 @@ package api
 import (
 	//"encoding/json"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -12,8 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	//"github.com/pierre0210/wenku8-api/internal/database"
-	//chapterTable "github.com/pierre0210/wenku8-api/internal/database/table/chapter"
+	"github.com/pierre0210/wenku8-api/internal/database"
 	"github.com/pierre0210/wenku8-api/internal/util"
 	"github.com/pierre0210/wenku8-api/internal/wenku"
 )
@@ -53,14 +53,8 @@ func splitVolume(content string, volume wenku.Volume, aid int, vid int) {
 		volume.ChapterList[index].Urls = rUrl.FindAllString(htmlChapter, -1)
 		volume.ChapterList[index].Content = htmlChapter
 
-		/*
-			chapterExists, _ := chapterTable.CheckChapter(database.DB, aid, vid, cid)
-			contentObj, _ := json.Marshal(volume.ChapterList[index])
-			_, err := chapterTable.AddChapter(database.DB, aid, vid, index+1, chapter.Title, string(contentObj))
-			if err != nil {
-				log.Println(err)
-			}
-		*/
+		chapterStr, _ := json.Marshal(volume.ChapterList[index])
+		database.AddChapter(aid, vid, index+1, string(chapterStr))
 	}
 }
 
@@ -96,16 +90,12 @@ func getVolume(aidNum int, vidNum int) (int, volumeResponse, wenku.Volume) {
 }
 
 func getChapter(aid int, vid int, cid int) (int, chapterResponse) {
-	/*
-		chapterExists, _ := chapterTable.CheckChapter(database.DB, aid, vid, cid)
-		if chapterExists {
-			var chapterObj wenku.Chapter
-			_, _, content, _ := chapterTable.GetChapter(database.DB, aid, vid, cid)
-			json.Unmarshal([]byte(content), &chapterObj)
-
-			return 200, chapterResponse{Message: "Saved chapter found.", Content: chapterObj}
-		}
-	*/
+	content, exist := database.GetChapter(aid, vid, cid)
+	if exist {
+		var chapter wenku.Chapter
+		json.Unmarshal([]byte(content), &chapter)
+		return 200, chapterResponse{Message: "Chapter cache found.", Content: chapter}
+	}
 	statusCode, res, volume := getVolume(aid, vid)
 	if statusCode != 200 {
 		log.Printf("%d %s\n", statusCode, res.Message)

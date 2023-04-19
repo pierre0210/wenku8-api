@@ -5,10 +5,8 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"github.com/pierre0210/wenku8-api/internal/api"
 	"github.com/pierre0210/wenku8-api/internal/database"
-	"github.com/pierre0210/wenku8-api/internal/util"
 )
 
 func main() {
@@ -17,8 +15,8 @@ func main() {
 
 	database.InitRedis()
 
-	err := godotenv.Load()
-	util.ErrorHandler(err, true)
+	//err := godotenv.Load()
+	//util.ErrorHandler(err, true)
 
 	router := gin.Default()
 
@@ -27,5 +25,5 @@ func main() {
 	novelRouter.GET("/volume/:aid/:vol", api.HandleGetVolume)
 	novelRouter.GET("/index/:aid", api.HandleGetIndex)
 
-	router.Run(fmt.Sprintf("localhost:%d", *port))
+	router.Run(fmt.Sprintf(":%d", *port))
 }

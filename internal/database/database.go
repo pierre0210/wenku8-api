@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/pierre0210/wenku8-api/internal/util"
 	"github.com/redis/go-redis/v9"
@@ -47,4 +48,18 @@ func InitRedis() {
 
 	_, err := Redis.Ping(Ctx).Result()
 	util.ErrorHandler(err, true)
+}
+
+func GetChapter(aid int, volume int, chapter int) (string, bool) {
+	result, err := Redis.Get(Ctx, fmt.Sprintf("%d-%d-%d", aid, volume, chapter)).Result()
+	util.ErrorHandler(err, false)
+	if err != nil {
+		return result, false
+	}
+	return result, true
+}
+
+func AddChapter(aid int, volume int, chapter int, content string) {
+	err := Redis.Set(Ctx, fmt.Sprintf("%d-%d-%d", aid, volume, chapter), content, time.Hour*24).Err()
+	util.ErrorHandler(err, false)
 }
