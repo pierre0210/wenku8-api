@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  cache:
+    image: redis:alpine
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - 6379:6379
+  wenku8:
+    build:
+      context: .
+    depends_on:
+      - cache
+    env_file:
+      - wenku8.env
+    ports:
+      - 5000:5000
